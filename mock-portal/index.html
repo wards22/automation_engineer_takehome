@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Eligibility Portal - Mock System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40">
+                    <rect width="40" height="40" fill="#0066cc" rx="5"/>
+                    <text x="20" y="28" font-size="24" fill="white" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold">IEP</text>
+                </svg>
+            </div>
+            <h1>Insurance Eligibility Portal</h1>
+            <p class="subtitle">Mock System for Testing</p>
+        </header>
+
+        <!-- Login Form -->
+        <div id="login-form" class="card">
+            <h2>Provider Login</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required data-testid="username-input">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required data-testid="password-input">
+                </div>
+                <div id="login-error" class="error-message" style="display: none;"></div>
+                <button type="submit" class="btn btn-primary" data-testid="login-button">Login</button>
+            </form>
+        </div>
+
+        <!-- Eligibility Check Form (hidden initially) -->
+        <div id="eligibility-form" class="card" style="display: none;">
+            <div class="form-header">
+                <h2>Check Patient Eligibility</h2>
+                <button id="logout-button" class="btn btn-secondary">Logout</button>
+            </div>
+            <form id="eligibilityForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name *</label>
+                        <input type="text" id="firstName" name="firstName" required data-testid="firstName-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name *</label>
+                        <input type="text" id="lastName" name="lastName" required data-testid="lastName-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dob">Date of Birth *</label>
+                        <input type="date" id="dob" name="dob" required data-testid="dob-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="memberId">Member ID *</label>
+                        <input type="text" id="memberId" name="memberId" required data-testid="memberId-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="insuranceProvider">Insurance Provider *</label>
+                    <select id="insuranceProvider" name="insuranceProvider" required data-testid="provider-select">
+                        <option value="">-- Select Provider --</option>
+                        <option value="BlueCross BlueShield">BlueCross BlueShield</option>
+                        <option value="Aetna">Aetna</option>
+                        <option value="UnitedHealthcare">UnitedHealthcare</option>
+                        <option value="Cigna">Cigna</option>
+                        <option value="Humana">Humana</option>
+                        <option value="Anthem">Anthem</option>
+                        <option value="Kaiser Permanente">Kaiser Permanente</option>
+                        <option value="Molina Healthcare">Molina Healthcare</option>
+                    </select>
+                </div>
+                <div id="check-error" class="error-message" style="display: none;"></div>
+                <button type="submit" class="btn btn-primary" data-testid="check-button">Check Eligibility</button>
+            </form>
+        </div>
+
+        <!-- Results Display (hidden initially) -->
+        <div id="results" class="card results-card" style="display: none;">
+            <h2>Eligibility Results</h2>
+            <div id="results-content"></div>
+            <button id="check-another" class="btn btn-primary">Check Another Patient</button>
+        </div>
+
+        <footer>
+            <p>Mock Insurance Portal v1.0 | For Testing Purposes Only</p>
+            <p class="hint">Valid credentials: username=<code>test_user</code>, password=<code>test_pass123</code></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+patient_id,first_name,last_name,date_of_birth,insurance_provider,member_id
+P001,Sarah,Johnson,1985-03-15,BlueCross BlueShield,BCBS123456789
+P002,Michael,Chen,1992-07-22,Aetna,AET987654321
+P003,Emily,Rodriguez,2010-11-08,UnitedHealthcare,UHC456789123
+P004,James,Williams,2015-01-30,Cigna,CIG789123456
+P005,Maria,Garcia,2008-09-12,Humana,HUM321654987
+P006,David,Brown,1978-12-05,Anthem,ANT147258369
+P007,Lisa,Martinez,2012-04-18,Kaiser Permanente,KP963852741
+P008,Robert,Anderson,1995-06-27,Molina Healthcare,MOL258369147
+P009,Jennifer,O'Brien,1990-02-14,BlueCross BlueShield,BCBS999888777
+P010,José,García-López,2013-12-25,Aetna,AET111222333
+P011,Mary-Anne,Smith-Jones,1988-09-01,UnitedHealthcare,INVALID123
+P012,Christopher,VeryLongLastNameThatExceedsTypicalLength,2005-03-30,Cigna,CIG555666777
+P013,,Wilson,1995-07-15,Humana,HUM444555666
+P014,Patricia,,,Anthem,ANT888999000
+P015,Richard,Davis,2025-01-01,Kaiser Permanente,KP777888999
+P016,Linda,Taylor,1899-12-31,Molina Healthcare,MOL666777888
+P017,   John   ,   Doe   ,2000-06-15,BlueCross BlueShield,  BCBS111222
+P018,Amanda,Johnson,06/15/1985,Aetna,AET333444555
+P019,Thomas,Brown,1992-13-45,UnitedHealthcare,UHC222333444
+P020,Barbara,Miller,1987-04-31,Cigna,CIG888777666
