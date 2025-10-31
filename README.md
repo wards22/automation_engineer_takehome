@@ -125,8 +125,7 @@ See `EDGE_CASES.md` for complete documentation of all test scenarios.
 
 ### 4. Mock Insurance Portal
 
-Use this test site for browser automation: `https://insurance-portal-mock.example.com`
-(Note: Replace with actual test site URL before distributing)
+Use this test site for browser automation: `https://bluesprig-pediatrics.github.io/automation_engineer_takehome/mock-portal/`
 
 **Test Credentials**:
 - Username: `test_user`
@@ -193,4 +192,4 @@ Open a GitHub Issue in this repository and we'll respond within 24 hours.
 
 Good luck! We're excited to see your approach to this problem.
 
-**Questions or issues?** Contact: michelle.pellon@bluesprig.com
+**Questions or issues?** Contact: michelle.pellon@bluesprigpediatrics.com

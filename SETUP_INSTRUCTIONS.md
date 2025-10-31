@@ -16,7 +16,7 @@ git commit -m "Initial commit: Junior Automation Engineer take-home assignment"
 
 # Create repository on GitHub
 # Then push
-git remote add origin https://github.com/BluesprigHealthcare/automation_engineer_takehome.git
+git remote add origin https://github.com/bluesprig-pediatrics/automation_engineer_takehome.git
 git branch -M main
 git push -u origin main
 ```
@@ -37,27 +37,16 @@ On GitHub:
 3. Go to **Settings** → **Pages**
    - Enable GitHub Pages
    - Source: Deploy from branch `main`
-   - Folder: `/mock-portal`
+   - Folder: `/(root)`
    - Wait for deployment (check Actions tab)
-   - Note the URL (will be `https://bluesprighealthcare.github.io/automation_engineer_takehome/`)
+   - Portal URL will be: `https://bluesprig-pediatrics.github.io/automation_engineer_takehome/mock-portal/`
 
-### 3. Update README with Live Portal URL
+### 3. Portal URL Already Updated
 
-After GitHub Pages deploys, update the main README.md:
+The README.md already contains the live portal URL:
+`https://bluesprig-pediatrics.github.io/automation_engineer_takehome/mock-portal/`
 
-```markdown
-### 4. Mock Insurance Portal
-
-Use this test site for browser automation: https://bluesprighealthcare.github.io/automation_engineer_takehome/
-```
-
-Commit this change:
-
-```bash
-git add README.md
-git commit -m "docs: update portal URL with live GitHub Pages link"
-git push
-```
+No additional updates needed!
 
 ---
 
@@ -217,4 +206,4 @@ Check:
 
 ## Questions?
 
-Contact: michelle.pellon@bluesprig.com
+Contact: michelle.pellon@bluesprigpediatrics.com
