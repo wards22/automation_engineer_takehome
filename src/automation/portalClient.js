@@ -184,34 +184,50 @@ export class PortalClient {
             await memberIdLocator.fill(p.memberId);
             await submitLocator.click();
 
-            // Wait for result or error
-            const resultElig = this.#page.locator(S.result.eligibilityId);
-            const resultCov = this.#page.locator(S.result.coverageId);
-            const resultErr = this.#page.locator(S.result.errorId);
+            // Wait for the results section to be displayed
+const resultsPanel = this.#page.locator('#results');
+await resultsPanel.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT });
 
-            await Promise.race([
-                resultElig.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-                resultErr.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-            ]).catch(() => { });
+// Helper: get the .result-value text for a given label
+const valueFor = async (labelExact) => {
+  const row = this.#page
+    .locator('#results-content .result-item')
+    .filter({ has: this.#page.getByText(labelExact, { exact: true }) });
+  const val = row.locator('.result-value').first();
+  if (await val.count() === 0) return null;
+  const txt = (await val.innerText()).trim();
+  return txt || null;
+};
 
-            const [eligText, covText, errText] = await Promise.all([
-                resultElig.isVisible().then(v => v ? resultElig.innerText() : null),
-                resultCov.isVisible().then(v => v ? resultCov.innerText() : null),
-                resultErr.isVisible().then(v => v ? resultErr.innerText() : null),
-            ]);
+const eligibilityText = await valueFor('Eligibility Status:');
+const coverageText    = await valueFor('Coverage Type:');
 
-            if (errText) {
-                return { status: 'Unknown', errorMessage: errText.trim(), raw: { eligibility: eligText ?? '', coverage: covText ?? '' } };
-            }
+// Optional: if the portal shows an error banner area
+let errText = null;
+try {
+  const errEl = this.#page.locator('#errorMessage');
+  if (await errEl.isVisible()) errText = (await errEl.innerText()).trim();
+} catch { /* ignore */ }
 
-            const status = (eligText ?? '').trim() || 'Unknown';
-            const coverageType = (covText ?? '').trim() || undefined;
-            const normalized =
-                /active/i.test(status) ? 'Active' :
-                    /inactive/i.test(status) ? 'Inactive' :
-                        'Unknown';
+const normalizedStatus =
+  /active/i.test(eligibilityText ?? '') ? 'Active' :
+  /inactive/i.test(eligibilityText ?? '') ? 'Inactive' :
+  'Unknown';
 
-            return { status: normalized, coverageType, raw: { eligibility: eligText ?? '', coverage: covText ?? '' } };
+if (errText) {
+  return {
+    status: 'Unknown',
+    coverageType: coverageText ?? undefined,
+    errorMessage: errText,
+    raw: { eligibility: eligibilityText ?? '', coverage: coverageText ?? '' },
+  };
+}
+
+return {
+  status: normalizedStatus,
+  coverageType: coverageText ?? undefined,
+  raw: { eligibility: eligibilityText ?? '', coverage: coverageText ?? '' },
+};
         } catch (err) {
             throw new FormError('Verification failed', { cause: err, patientId: p.patientId });
         }
