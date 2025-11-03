@@ -1,0 +1,25 @@
+patientId,firstName,lastName,dateOfBirth,insuranceProvider,memberId,eligibility_status,coverage_type,verified_at,error_message
+P013,,Wilson,1995-07-15,Humana,HUM444555666,Unknown,,2025-11-03T22:53:45.925Z,First Name is required
+P014,Patricia,,,Anthem,ANT888999000,Unknown,,2025-11-03T22:53:45.925Z,Last Name is required; DOB missing
+P019,Thomas,Brown,1992-13-45,UnitedHealthcare,UHC222333444,Unknown,,2025-11-03T22:53:45.925Z,"Unrecognized DOB format: ""1992-13-45"""
+P020,Barbara,Miller,1987-04-31,Cigna,CIG888777666,Unknown,,2025-11-03T22:53:45.925Z,"Unrecognized DOB format: ""1987-04-31"""
+P001,Sarah,Johnson,1985-03-15,BlueCross BlueShield,BCBS123456789,Active,PPO - Behavioral Health,2025-11-03T22:54:02.191Z,
+P002,Michael,Chen,1992-07-22,Aetna,AET987654321,Active,HMO - Mental Health Services,2025-11-03T22:54:04.486Z,
+P003,Emily,Rodriguez,2010-11-08,UnitedHealthcare,UHC456789123,Active,EPO - ABA Therapy,2025-11-03T22:54:06.747Z,
+P004,James,Williams,2015-01-30,Cigna,CIG789123456,Active,PPO - Behavioral Health,2025-11-03T22:54:09.006Z,
+P005,Maria,Garcia,2008-09-12,Humana,HUM321654987,Active,HMO - Pediatric Services,2025-11-03T22:54:11.297Z,
+P006,David,Brown,1978-12-05,Anthem,ANT147258369,Active,PPO - Autism Services,2025-11-03T22:54:13.556Z,
+P007,Lisa,Martinez,2012-04-18,Kaiser Permanente,KP963852741,Active,HMO - Behavioral Health,2025-11-03T22:54:15.944Z,
+P008,Robert,Anderson,1995-06-27,Molina Healthcare,MOL258369147,Active,Medicaid - Full Coverage,2025-11-03T22:54:18.240Z,
+P009,Jennifer,O'Brien,1990-02-14,BlueCross BlueShield,BCBS999888777,Active,PPO - Behavioral Health,2025-11-03T22:54:20.537Z,
+P010,José,García-López,2013-12-25,Aetna,AET111222333,Active,HMO - Pediatric ABA,2025-11-03T22:54:22.820Z,
+P011,Mary-Anne,Smith-Jones,1988-09-01,UnitedHealthcare,INVALID123,Unknown,,2025-11-03T22:54:33.631Z,"locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('#results') to be visible[22m
+[2m    24 × locator resolved to hidden <div id=""results"" class=""card results-card"">…</div>[22m
+"
+P012,Christopher,VeryLongLastNameThatExceedsTypicalLength,2005-03-30,Cigna,CIG555666777,Active,PPO - Mental Health,2025-11-03T22:54:35.581Z,
+P015,Richard,Davis,2025-01-01,Kaiser Permanente,KP777888999,Unknown,Not Yet Effective,2025-11-03T22:54:38.090Z,
+P016,Linda,Taylor,1899-12-31,Molina Healthcare,MOL666777888,Active,Medicare Advantage - Full Coverage,2025-11-03T22:54:40.371Z,
+P017,John,Doe,2000-06-15,BlueCross BlueShield,BCBS111222,Active,PPO - Behavioral Health,2025-11-03T22:54:42.729Z,
+P018,Amanda,Johnson,06/15/1985,Aetna,AET333444555,Active,HMO - Mental Health,2025-11-03T22:54:45.016Z,
