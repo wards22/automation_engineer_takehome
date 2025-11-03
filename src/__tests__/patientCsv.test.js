@@ -14,9 +14,9 @@ describe('readPatientCsv', () => {
   test('parses valid rows and reports invalid rows', async () => {
     const csv = [
       'Patient ID,First Name,Last Name,Date of Birth,Insurance Provider,Member ID',
-      'P001,Sarah,Johnson,1985-03-15,BlueCross BlueShield,BCBS123',
+      'P001,Sarah,Johnson,1988-03-15,BlueCross BlueShield,BCBS123',
       'P002,Alan,,03/22/1980,Aetna,AET999', // Missing last name → invalid
-      'P003,Rosa,Diaz,1981/12/01,United,UNI-55' // valid
+      'P003,Rosa,Diaz,1981/12/01,United,UNI-55' // valid structure
     ].join('\n');
 
     const file = writeTmpCsv(csv);
@@ -29,7 +29,7 @@ describe('readPatientCsv', () => {
     const first = rows[0].normalized;
     expect(first.patientId).toBe('P001');
     expect(first.firstName).toBe('Sarah');
-    expect(first.dateOfBirthISO).toBe('1985-03-15');
+    expect(first.dateOfBirthISO).toBe('1988-03-15');
   });
 
   test('accepts flexible header names', async () => {
