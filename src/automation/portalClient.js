@@ -1,4 +1,3 @@
-// src/automation/portalClient.js
 import { chromium } from 'playwright';
 import dotenv from 'dotenv';
 import { selectors as S } from './selectors.js';
@@ -13,174 +12,213 @@ const HEADLESS = String(process.env.HEADLESS ?? 'true') === 'true';
 const ACTION_TIMEOUT = Number(process.env.PW_ACTION_TIMEOUT ?? 10000);
 
 function sel(page, desc) {
-  switch (desc.by) {
-    case 'label': return page.getByLabel(desc.name, { exact: false });
-    case 'role':  return page.getByRole(desc.role, { name: desc.name, exact: false });
-    default: throw new Error('Unknown selector type');
-  }
+    switch (desc.by) {
+        case 'label': return page.getByLabel(desc.name, { exact: false });
+        case 'role': return page.getByRole(desc.role, { name: desc.name, exact: false });
+        default: throw new Error('Unknown selector type');
+    }
 }
 
 function assertEnv() {
-  const missing = [];
-  if (!BASE_URL) missing.push('PORTAL_BASE_URL');
-  if (!USERNAME) missing.push('PORTAL_USERNAME');
-  if (!PASSWORD) missing.push('PORTAL_PASSWORD');
-  if (missing.length) throw new Error(`Missing required env vars: ${missing.join(', ')}`);
+    const missing = [];
+    if (!BASE_URL) missing.push('PORTAL_BASE_URL');
+    if (!USERNAME) missing.push('PORTAL_USERNAME');
+    if (!PASSWORD) missing.push('PORTAL_PASSWORD');
+    if (missing.length) throw new Error(`Missing required env vars: ${missing.join(', ')}`);
 }
 
 async function ensureValidUrl(url) {
-  try { return new URL(url).toString(); }
-  catch { throw new Error(`Invalid PORTAL_BASE_URL: ${url}`); }
+    try { return new URL(url).toString(); }
+    catch { throw new Error(`Invalid PORTAL_BASE_URL: ${url}`); }
 }
 
 export class PortalClient {
-  #browser; #page; #loggedIn = false;
+    #browser; #page; #loggedIn = false;
 
-  static async create() {
-    assertEnv();
-    const browser = await chromium.launch({ headless: HEADLESS });
-    const page = await browser.newPage();
-    page.setDefaultTimeout(ACTION_TIMEOUT);
-    const client = new PortalClient(browser, page);
-    await client.#gotoHome();
-    return client;
-  }
-
-  constructor(browser, page) {
-    this.#browser = browser;
-    this.#page = page;
-  }
-
-  async #gotoHome() {
-    const url = await ensureValidUrl(BASE_URL);
-    try {
-      await this.#page.goto(url, { waitUntil: 'domcontentloaded' });
-    } catch (err) {
-      throw new NetworkError('Failed to reach portal', { cause: err, url });
+    static async create() {
+        assertEnv();
+        const browser = await chromium.launch({ headless: HEADLESS });
+        const page = await browser.newPage();
+        page.setDefaultTimeout(ACTION_TIMEOUT);
+        const client = new PortalClient(browser, page);
+        await client.#gotoHome();
+        return client;
     }
-  }
 
-  async login(username = USERNAME, password = PASSWORD) {
-    try {
-      // If no username/password fields are present, assume no login is needed.
-      const usernameCount = await sel(this.#page, S.login.username).count().catch(() => 0);
-      const passwordCount = await sel(this.#page, S.login.password).count().catch(() => 0);
-
-      if (usernameCount === 0 || passwordCount === 0) {
-        // Check if the patient form is already visible (either label locators or test id fallbacks)
-        const formField = this.#page.locator(S.form.firstNameTestId).first();
-        const submitBtn = this.#page.locator(S.form.submitTestId).first();
-        await Promise.race([
-          formField.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-          submitBtn.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-          sel(this.#page, S.form.firstName).waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-          sel(this.#page, S.form.submit).waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-        ]);
-        this.#loggedIn = true;
-        return;
-      }
-
-      // Otherwise, perform login.
-      await sel(this.#page, S.login.username).fill(username);
-      await sel(this.#page, S.login.password).fill(password);
-      await sel(this.#page, S.login.submit).click();
-
-      // Wait until the form is available post-login using race of separate waits.
-      await Promise.race([
-        sel(this.#page, S.form.firstName).waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-        sel(this.#page, S.form.submit).waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-        this.#page.locator(S.form.firstNameTestId).first().waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-        this.#page.locator(S.form.submitTestId).first().waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-      ]);
-
-      // Optional explicit auth banner check
-      const banner = sel(this.#page, S.login.errorBanner);
-      if (await banner.isVisible().catch(() => false)) {
-        throw new AuthError('Portal shows authentication error');
-      }
-
-      this.#loggedIn = true;
-    } catch (err) {
-      if (err instanceof AuthError) throw err;
-      throw new NetworkError('Login failed', { cause: err });
+    constructor(browser, page) {
+        this.#browser = browser;
+        this.#page = page;
     }
-  }
 
-  async verifyEligibility(p) {
-    if (!this.#loggedIn) await this.login();
-
-    try {
-      // Prefer test IDs when available, else labels.
-      const firstName = this.#page.locator(S.form.firstNameTestId).first();
-      const lastName  = this.#page.locator(S.form.lastNameTestId).first();
-      const dob       = this.#page.locator(S.form.dobTestId).first();
-      const provider  = this.#page.locator(S.form.providerTestId).first();
-      const memberId  = this.#page.locator(S.form.memberIdTestId).first();
-      const submitBtn = this.#page.locator(S.form.submitTestId).first();
-
-      const firstNameLocator = await firstName.count() ? firstName : sel(this.#page, S.form.firstName);
-      const lastNameLocator  = await lastName.count()  ? lastName  : sel(this.#page, S.form.lastName);
-      const dobLocator       = await dob.count()       ? dob       : sel(this.#page, S.form.dob);
-      const providerLocator  = await provider.count()  ? provider  : sel(this.#page, S.form.provider);
-      const memberIdLocator  = await memberId.count()  ? memberId  : sel(this.#page, S.form.memberId);
-      const submitLocator    = await submitBtn.count() ? submitBtn : sel(this.#page, S.form.submit);
-
-      // Fill form
-      await firstNameLocator.fill(p.firstName);
-      await lastNameLocator.fill(p.lastName);
-      const dobDisplay = new Date(p.dateOfBirthISO).toLocaleDateString('en-US', { timeZone: 'UTC' });
-      await dobLocator.fill(dobDisplay);
-
-      // Provider: select vs input
-      const tag = await providerLocator.evaluate(el => el.tagName.toLowerCase()).catch(() => 'input');
-      if (tag === 'select') {
-        await providerLocator.selectOption({ label: p.insuranceProvider }).catch(async () => {
-          const options = await providerLocator.evaluate(s => [...s.options].map(o => ({ value: o.value, label: o.label })));
-          const match = options.find(o => o.label.toLowerCase().includes(p.insuranceProvider.toLowerCase()));
-          if (match) await providerLocator.selectOption(match.value);
-        });
-      } else {
-        await providerLocator.fill(p.insuranceProvider);
-      }
-
-      await memberIdLocator.fill(p.memberId);
-      await submitLocator.click();
-
-      // Wait for result or error
-      const resultElig = this.#page.locator(S.result.eligibilityId);
-      const resultCov  = this.#page.locator(S.result.coverageId);
-      const resultErr  = this.#page.locator(S.result.errorId);
-
-      await Promise.race([
-        resultElig.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-        resultErr.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
-      ]).catch(() => {});
-
-      const [eligText, covText, errText] = await Promise.all([
-        resultElig.isVisible().then(v => v ? resultElig.innerText() : null),
-        resultCov.isVisible().then(v => v ? resultCov.innerText() : null),
-        resultErr.isVisible().then(v => v ? resultErr.innerText() : null),
-      ]);
-
-      if (errText) {
-        return { status: 'Unknown', errorMessage: errText.trim(), raw: { eligibility: eligText ?? '', coverage: covText ?? '' } };
-      }
-
-      const status = (eligText ?? '').trim() || 'Unknown';
-      const coverageType = (covText ?? '').trim() || undefined;
-      const normalized =
-        /active/i.test(status) ? 'Active' :
-        /inactive/i.test(status) ? 'Inactive' :
-        'Unknown';
-
-      return { status: normalized, coverageType, raw: { eligibility: eligText ?? '', coverage: covText ?? '' } };
-    } catch (err) {
-      throw new FormError('Verification failed', { cause: err, patientId: p.patientId });
+    async #gotoHome() {
+        const url = await ensureValidUrl(BASE_URL);
+        try {
+            await this.#page.goto(url, { waitUntil: 'domcontentloaded' });
+        } catch (err) {
+            throw new NetworkError('Failed to reach portal', { cause: err, url });
+        }
     }
-  }
 
-  async close() {
-    await this.#page?.close().catch(() => {});
-    await this.#browser?.close().catch(() => {});
-  }
+    async login(username = USERNAME, password = PASSWORD) {
+        try {
+            // 1) If the patient form is already on the page, skip login entirely.
+            const formCandidates = [
+                this.#page.locator(S.form.firstNameTestId).first(),
+                this.#page.locator(S.form.submitTestId).first(),
+                sel(this.#page, S.form.firstName),
+                sel(this.#page, S.form.submit),
+            ];
+
+            // Wait up to ACTION_TIMEOUT for any of those to be visible.
+            await Promise.race(
+                formCandidates.map(loc => loc.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }))
+            ).then(() => {
+                this.#loggedIn = true;
+            }).catch(() => { /* no form in view yet, try login fields below */ });
+
+            if (this.#loggedIn) return;
+
+            // 2) If we got here, try to find username/password inputs. If they don't exist, that's fine (no login needed).
+            const userLoc = sel(this.#page, S.login.username);
+            const passLoc = sel(this.#page, S.login.password);
+            const submitLoc = sel(this.#page, S.login.submit);
+
+            const [userCount, passCount] = await Promise.all([
+                userLoc.count().catch(() => 0),
+                passLoc.count().catch(() => 0),
+            ]);
+
+            // No login fields? Then just wait briefly for the form and move on.
+            if (userCount === 0 || passCount === 0) {
+                await Promise.race(
+                    formCandidates.map(loc => loc.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }))
+                );
+                this.#loggedIn = true;
+                return;
+            }
+
+            // 3) Perform login.
+            await userLoc.fill(username);
+            await passLoc.fill(password);
+            await submitLoc.click();
+
+            // 4) After submit, wait for the form to appear (no chaining/or locators).
+            await Promise.race(
+                formCandidates.map(loc => loc.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }))
+            );
+
+            this.#loggedIn = true;
+        } catch (err) {
+            // Optional: check for an explicit auth banner if your portal shows one.
+            // const banner = sel(this.#page, S.login.errorBanner);
+            // if (await banner.isVisible().catch(() => false)) throw new AuthError('Portal shows authentication error');
+
+            throw new NetworkError('Login failed', { cause: err });
+        }
+    }
+
+
+    async verifyEligibility(p) {
+        if (!this.#loggedIn) await this.login();
+
+        try {
+            // Prefer test IDs when available, else labels.
+            const firstName = this.#page.locator(S.form.firstNameTestId).first();
+            const lastName = this.#page.locator(S.form.lastNameTestId).first();
+            const dob = this.#page.locator(S.form.dobTestId).first();
+            const provider = this.#page.locator(S.form.providerTestId).first();
+            const memberId = this.#page.locator(S.form.memberIdTestId).first();
+            const submitBtn = this.#page.locator(S.form.submitTestId).first();
+
+            const firstNameLocator = await firstName.count() ? firstName : sel(this.#page, S.form.firstName);
+            const lastNameLocator = await lastName.count() ? lastName : sel(this.#page, S.form.lastName);
+            const dobLocator = await dob.count() ? dob : sel(this.#page, S.form.dob);
+            const providerLocator = await provider.count() ? provider : sel(this.#page, S.form.provider);
+            const memberIdLocator = await memberId.count() ? memberId : sel(this.#page, S.form.memberId);
+            const submitLocator = await submitBtn.count() ? submitBtn : sel(this.#page, S.form.submit);
+
+            // Fill form
+            await firstNameLocator.fill(p.firstName);
+            await lastNameLocator.fill(p.lastName);
+
+            // --- DOB handling: adapt to input type ---
+            const inputType = await dobLocator.evaluate(el => el.getAttribute('type') || 'text').catch(() => 'text');
+
+            // Helpers to ensure clean fill
+            async function clearAndFill(locator, value) {
+                await locator.click({ clickCount: 3 }).catch(() => { }); // select-all
+                await locator.fill(''); // clear just in case
+                await locator.type(value); // type is more human-like, avoids some masking weirdness
+            }
+
+            if (inputType.toLowerCase() === 'date') {
+                // Use ISO (YYYY-MM-DD) for date inputs
+                // Ensure it's a valid ISO string like "1985-03-15"
+                const iso = p.dateOfBirthISO;
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+                    throw new FormError('Invalid ISO DOB for date input', { patientId: p.patientId, iso });
+                }
+                await clearAndFill(dobLocator, iso);
+            } else {
+                // Fall back to MM/DD/YYYY for text inputs
+                const d = new Date(p.dateOfBirthISO + 'T00:00:00Z');
+                const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(d.getUTCDate()).padStart(2, '0');
+                const yyyy = d.getUTCFullYear();
+                const display = `${mm}/${dd}/${yyyy}`;
+                await clearAndFill(dobLocator, display);
+            }
+
+            // Provider: select vs input
+            const tag = await providerLocator.evaluate(el => el.tagName.toLowerCase()).catch(() => 'input');
+            if (tag === 'select') {
+                await providerLocator.selectOption({ label: p.insuranceProvider }).catch(async () => {
+                    const options = await providerLocator.evaluate(s => [...s.options].map(o => ({ value: o.value, label: o.label })));
+                    const match = options.find(o => o.label.toLowerCase().includes(p.insuranceProvider.toLowerCase()));
+                    if (match) await providerLocator.selectOption(match.value);
+                });
+            } else {
+                await providerLocator.fill(p.insuranceProvider);
+            }
+
+            await memberIdLocator.fill(p.memberId);
+            await submitLocator.click();
+
+            // Wait for result or error
+            const resultElig = this.#page.locator(S.result.eligibilityId);
+            const resultCov = this.#page.locator(S.result.coverageId);
+            const resultErr = this.#page.locator(S.result.errorId);
+
+            await Promise.race([
+                resultElig.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
+                resultErr.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT }),
+            ]).catch(() => { });
+
+            const [eligText, covText, errText] = await Promise.all([
+                resultElig.isVisible().then(v => v ? resultElig.innerText() : null),
+                resultCov.isVisible().then(v => v ? resultCov.innerText() : null),
+                resultErr.isVisible().then(v => v ? resultErr.innerText() : null),
+            ]);
+
+            if (errText) {
+                return { status: 'Unknown', errorMessage: errText.trim(), raw: { eligibility: eligText ?? '', coverage: covText ?? '' } };
+            }
+
+            const status = (eligText ?? '').trim() || 'Unknown';
+            const coverageType = (covText ?? '').trim() || undefined;
+            const normalized =
+                /active/i.test(status) ? 'Active' :
+                    /inactive/i.test(status) ? 'Inactive' :
+                        'Unknown';
+
+            return { status: normalized, coverageType, raw: { eligibility: eligText ?? '', coverage: covText ?? '' } };
+        } catch (err) {
+            throw new FormError('Verification failed', { cause: err, patientId: p.patientId });
+        }
+    }
+
+    async close() {
+        await this.#page?.close().catch(() => { });
+        await this.#browser?.close().catch(() => { });
+    }
 }
