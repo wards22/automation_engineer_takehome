@@ -117,6 +117,43 @@ export class PortalClient {
         }
     }
 
+    async #resetToForm() {
+        // Primary: click the "Check Another Patients Info" button
+        const checkAnother = this.#page.locator('#check-another');
+
+        try {
+            if (await checkAnother.isVisible({ timeout: 500 }).catch(() => false)) {
+                await checkAnother.click();
+            } else {
+                // Fallback: try by accessible name
+                const byText = this.#page.getByRole('button', { name: /check another/i });
+                if (await byText.isVisible().catch(() => false)) {
+                    await byText.click();
+                } else {
+                    // Last resort: reload home
+                    await this.#page.goto(new URL(process.env.PORTAL_BASE_URL).toString(), { waitUntil: 'domcontentloaded' });
+                }
+            }
+
+            // Wait for results to hide and the form container to show
+            const resultsPanel = this.#page.locator('#results');
+            const formPanel = this.#page.locator('#eligibility-form'); // container visible
+            await Promise.race([
+                formPanel.waitFor({ state: 'visible', timeout: 5000 }),
+                resultsPanel.waitFor({ state: 'hidden', timeout: 5000 }),
+            ]).catch(() => { });
+
+            // If the form element itself exists, ensure it’s reset (optional)
+            const formEl = this.#page.locator('#eligibilityForm'); // actual <form id="eligibilityForm">
+            if (await formEl.count()) {
+                // Use page.evaluate to call form.reset() safely
+                const handle = await formEl.elementHandle();
+                await this.#page.evaluate(f => f.reset(), handle).catch(() => { });
+            }
+        } catch {
+            // Non-fatal: next iteration will try to recover anyway
+        }
+    }
 
     async verifyEligibility(p) {
         if (!this.#loggedIn) await this.login();
@@ -153,7 +190,6 @@ export class PortalClient {
 
             if (inputType.toLowerCase() === 'date') {
                 // Use ISO (YYYY-MM-DD) for date inputs
-                // Ensure it's a valid ISO string like "1985-03-15"
                 const iso = p.dateOfBirthISO;
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
                     throw new FormError('Invalid ISO DOB for date input', { patientId: p.patientId, iso });
@@ -183,55 +219,62 @@ export class PortalClient {
 
             await memberIdLocator.fill(p.memberId);
             await submitLocator.click();
+            await this.#page.waitForLoadState('networkidle', { timeout: ACTION_TIMEOUT }).catch(() => { });
 
             // Wait for the results section to be displayed
-const resultsPanel = this.#page.locator('#results');
-await resultsPanel.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT });
+            const resultsPanel = this.#page.locator('#results');
+            await resultsPanel.waitFor({ state: 'visible', timeout: ACTION_TIMEOUT });
 
-// Helper: get the .result-value text for a given label
-const valueFor = async (labelExact) => {
-  const row = this.#page
-    .locator('#results-content .result-item')
-    .filter({ has: this.#page.getByText(labelExact, { exact: true }) });
-  const val = row.locator('.result-value').first();
-  if (await val.count() === 0) return null;
-  const txt = (await val.innerText()).trim();
-  return txt || null;
-};
+            // Helper: get the .result-value text for a given label
+            const valueFor = async (labelExact) => {
+                const row = this.#page
+                    .locator('#results-content .result-item')
+                    .filter({ has: this.#page.getByText(labelExact, { exact: true }) });
+                const val = row.locator('.result-value').first();
+                if (await val.count() === 0) return null;
+                const txt = (await val.innerText()).trim();
+                return txt || null;
+            };
 
-const eligibilityText = await valueFor('Eligibility Status:');
-const coverageText    = await valueFor('Coverage Type:');
+            const eligibilityText = await valueFor('Eligibility Status:');
+            const coverageText = await valueFor('Coverage Type:');
 
-// Optional: if the portal shows an error banner area
-let errText = null;
-try {
-  const errEl = this.#page.locator('#errorMessage');
-  if (await errEl.isVisible()) errText = (await errEl.innerText()).trim();
-} catch { /* ignore */ }
+            // Optional: if the portal shows an error banner area
+            let errText = null;
+            try {
+                const errEl = this.#page.locator('#errorMessage');
+                if (await errEl.isVisible()) errText = (await errEl.innerText()).trim();
+            } catch { }
 
-const normalizedStatus =
-  /active/i.test(eligibilityText ?? '') ? 'Active' :
-  /inactive/i.test(eligibilityText ?? '') ? 'Inactive' :
-  'Unknown';
+            const normalizedStatus =
+                /active/i.test(eligibilityText ?? '') ? 'Active' :
+                    /inactive/i.test(eligibilityText ?? '') ? 'Inactive' :
+                        'Unknown';
 
-if (errText) {
-  return {
-    status: 'Unknown',
-    coverageType: coverageText ?? undefined,
-    errorMessage: errText,
-    raw: { eligibility: eligibilityText ?? '', coverage: coverageText ?? '' },
-  };
-}
+            if (errText) {
+                const out = {
+                    status: 'Unknown',
+                    coverageType: coverageText ?? undefined,
+                    errorMessage: errText,
+                    raw: { eligibility: eligibilityText ?? '', coverage: coverageText ?? '' },
+                };
+                await this.#resetToForm();   // <-- NEW
+                return out;
+            }
 
-return {
-  status: normalizedStatus,
-  coverageType: coverageText ?? undefined,
-  raw: { eligibility: eligibilityText ?? '', coverage: coverageText ?? '' },
-};
+            const out = {
+                status: normalizedStatus,
+                coverageType: coverageText ?? undefined,
+                raw: { eligibility: eligibilityText ?? '', coverage: coverageText ?? '' },
+            };
+            await this.#resetToForm();     // <-- NEW
+            return out;
+
         } catch (err) {
             throw new FormError('Verification failed', { cause: err, patientId: p.patientId });
         }
     }
+
 
     async close() {
         await this.#page?.close().catch(() => { });

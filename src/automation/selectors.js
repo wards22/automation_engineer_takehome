@@ -27,5 +27,6 @@ export const selectors = {
     eligibilityId: '#eligibilityStatus',
     coverageId:    '#coverageType',
     errorId:       '#errorMessage',
+    checkAnotherId: '#check-another',
   },
 };

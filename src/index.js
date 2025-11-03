@@ -1,22 +1,16 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { readPatientCsv } from './csv/patientCsv.js';
+import { runBatch } from './batch/runBatch.js';
 
 async function main() {
-  const file = process.argv[2] ?? path.join('data', 'patients_sample.csv');
-  const { rows, errors } = await readPatientCsv(file);
+  const inPath = process.argv[2] ?? path.join('data', 'patients_sample.csv');
+  const outPath = process.argv[3] ?? path.join('out', 'results.csv');
 
-  console.log(`Parsed ${rows.length} valid row(s).`);
-  if (errors.length) {
-    console.log(`Encountered ${errors.length} invalid row(s):`);
-    for (const e of errors) {
-      console.log(`  Row ${e.rowNumber}: ${e.issues.join('; ')}`);
-    }
-  }
+  // ensure output dir exists
+  const outDir = path.dirname(outPath);
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
-  // Example: pull out normalized patients for the next step
-  const patients = rows.map(r => r.normalized);
-  console.log('\nFirst normalized row (if any):');
-  console.log(patients[0] ?? '(none)');
+  await runBatch(inPath, outPath);
 }
 
 main().catch((e) => {
