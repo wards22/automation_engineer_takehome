@@ -6,9 +6,10 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
-    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+    "test":   "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=src/__tests__/patientCsv\\.test\\.js",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=src/__tests__/.*\\.int\\.test\\.js",
+    "test:e2e": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=src/__tests__/.*\\.e2e\\.test\\.js"
   },
   "keywords": [
     "automation",
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "csv-parse": "^6.1.0",
+    "csv-stringify": "^6.6.0",
     "dotenv": "^16.6.1",
     "luxon": "^3.7.2"
   }
